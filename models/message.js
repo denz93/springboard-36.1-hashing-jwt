@@ -8,10 +8,20 @@ const ExpressError = require("../expressError");
 
 class Message {
 
+  constructor({id, from_username, to_username, body, sent_at, read_at, from_user, to_user}) {
+    this.id = id;
+    this.from_username = from_username;
+    this.to_username = to_username;
+    this.body = body;
+    this.sent_at = sent_at;
+    this.read_at = read_at;
+    this.from_user = from_user;
+    this.to_user = to_user;
+  }
+
   /** register new message -- returns
    *    {id, from_username, to_username, body, sent_at}
    */
-
   static async create({from_username, to_username, body}) {
     const result = await db.query(
         `INSERT INTO messages (
@@ -20,27 +30,27 @@ class Message {
               body,
               sent_at)
             VALUES ($1, $2, $3, current_timestamp)
-            RETURNING id, from_username, to_username, body, sent_at`,
+            RETURNING id, from_username, to_username, body, sent_at, read_at`,
         [from_username, to_username, body]);
 
-    return result.rows[0];
+    return new Message(result.rows[0]);
   }
 
   /** Update read_at for message */
 
-  static async markRead(id) {
+  async markRead() {
     const result = await db.query(
         `UPDATE messages
            SET read_at = current_timestamp
            WHERE id = $1
            RETURNING id, read_at`,
-        [id]);
+        [this.id]);
 
     if (!result.rows[0]) {
       throw new ExpressError(`No such message: ${id}`, 404);
     }
-
-    return result.rows[0];
+    this.read_at = result.rows[0].read_at;
+    return this
   }
 
   /** Get: get message by id
@@ -77,8 +87,10 @@ class Message {
       throw new ExpressError(`No such message: ${id}`, 404);
     }
 
-    return {
+    return new Message ({
       id: m.id,
+      from_userna: m.from_username,
+      to_username: m.to_username,
       from_user: {
         username: m.from_username,
         first_name: m.from_first_name,
@@ -94,7 +106,7 @@ class Message {
       body: m.body,
       sent_at: m.sent_at,
       read_at: m.read_at,
-    };
+    });
   }
 }
 

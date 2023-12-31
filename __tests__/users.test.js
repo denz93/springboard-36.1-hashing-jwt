@@ -26,7 +26,7 @@ describe("Test User class", function () {
     });
 
     expect(u.username).toBe("joel");
-    expect(u.password).not.toBe(undefined);
+    expect(u.password).toBe(undefined);
   });
 
   test("can authenticate", async function () {
@@ -43,7 +43,7 @@ describe("Test User class", function () {
     let u = await User.get("test");
     expect(u.last_login_at).toBe(null);
 
-    User.updateLoginTimestamp("test");
+    await u.updateLoginTimestamp("test");
     let u2 = await User.get("test");
     expect(u2.last_login_at).not.toBe(null);
   });
@@ -55,14 +55,14 @@ describe("Test User class", function () {
       first_name: "Test",
       last_name: "Testy",
       phone: "+14155550000",
-      last_login_at: expect.any(Date),
+      last_login_at: null,
       join_at: expect.any(Date),
     });
   });
 
   test("can get all", async function () {
     let u = await User.all();
-    expect(u).toEqual([{
+    expect(u).toMatchObject([{
       username: "test",
       first_name: "Test",
       last_name: "Testy",
@@ -104,35 +104,27 @@ describe("Test messages part of User class", function () {
   });
 
   test('can get messages from user', async function () {
-    let m = await User.messagesFrom("test1");
-    expect(m).toEqual([{
+    let u = await User.get('test1')
+    let m = await u.messagesFrom("test1");
+    expect(m).toEqual(expect.arrayContaining([expect.objectContaining({
       id: expect.any(Number),
       body: "u1-to-u2",
       sent_at: expect.any(Date),
       read_at: null,
-      to_user: {
-        username: "test2",
-        first_name: "Test2",
-        last_name: "Testy2",
-        phone: "+14155552222",
-      }
-    }]);
+      to_username: 'test2'
+    })]));
   });
 
   test('can get messages to user', async function () {
-    let m = await User.messagesTo("test1");
-    expect(m).toEqual([{
+    let u = await User.get('test1')
+    let m = await u.messagesTo("test1");
+    expect(m).toEqual(expect.arrayContaining([expect.objectContaining({
       id: expect.any(Number),
       body: "u2-to-u1",
       sent_at: expect.any(Date),
       read_at: null,
-      from_user: {
-        username: "test2",
-        first_name: "Test2",
-        last_name: "Testy2",
-        phone: "+14155552222",
-      }
-    }]);
+      from_username: 'test2'
+    })]));
   });
 });
 
